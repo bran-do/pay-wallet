@@ -1,45 +1,88 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { RootStateType, Dispatch } from '../redux/types';
-import { fetchCurrenciesAction, fetchExchangeRatesAction } from '../redux/actions';
+import {
+  editFormBoolAction,
+  fetchCurrenciesAction,
+  fetchExchangeRatesAction,
+  overwriteExpenseAction } from '../redux/actions';
 
 function WalletForm() {
   const dispatch: Dispatch = useDispatch();
 
-  const { currencies } = useSelector((state: RootStateType) => state.wallet);
+  const {
+    currencies,
+    editor,
+    idToEdit,
+    editingRates } = useSelector((state: RootStateType) => state.wallet);
+
+  const initialTag = 'Alimentação'; // Lint implicou...
 
   const [form, setForm] = useState({
     value: '',
     currency: 'USD',
     method: 'Dinheiro',
-    tag: 'Alimentação',
+    tag: initialTag,
     description: '',
     exchangeRates: {},
     id: 0,
   });
-  const { value, currency, description, method, tag } = form;
+
+  const [editForm, setEditForm] = useState({
+    value: '',
+    currency: 'USD',
+    method: 'Dinheiro',
+    tag: initialTag,
+    description: '',
+    exchangeRates: {},
+    id: 0,
+  });
+
+  let { value, currency, description, method, tag } = form;
+
+  if (editor) {
+    value = editForm.value;
+    currency = editForm.currency;
+    method = editForm.method;
+    tag = editForm.tag;
+    description = editForm.description;
+  }
 
   function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name } = event.target;
     const eventValue = event.target.value;
-    setForm({
-      ...form,
-      [name]: eventValue,
-    });
+    if (editor) {
+      setEditForm({
+        ...editForm,
+        [name]: eventValue,
+      });
+    } else {
+      setForm({
+        ...form,
+        [name]: eventValue,
+      });
+    }
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: any) {
     event.preventDefault();
     dispatch(fetchExchangeRatesAction(form));
     setForm({
       value: '',
       currency: 'USD',
       method: 'Dinheiro',
-      tag: 'Alimentação',
+      tag: initialTag,
       description: '',
       exchangeRates: {},
       id: form.id + 1,
     });
+  }
+
+  function handleEditSubmit(event: any) {
+    event.preventDefault();
+    dispatch(overwriteExpenseAction(editForm, editingRates));
+
+    dispatch(editFormBoolAction(false));
   }
 
   useEffect(() => {
@@ -48,10 +91,15 @@ function WalletForm() {
     }
 
     getCurrencies();
-  }, [dispatch]);
+
+    setEditForm({
+      ...editForm,
+      id: idToEdit,
+    });
+  }, [dispatch, idToEdit, editForm]);
 
   return (
-    <form onSubmit={ handleSubmit }>
+    <form>
       <input
         name="value"
         type="number"
@@ -109,8 +157,9 @@ function WalletForm() {
         <option value="Transporte">Transporte</option>
         <option value="Saúde">Saúde</option>
       </select>
-
-      <button type="submit">Adicionar despesa</button>
+      {editor
+        ? (<button onClick={ handleEditSubmit }>Editar despesa</button>)
+        : (<button onClick={ handleSubmit }>Adicionar despesa</button>)}
     </form>
 
   );

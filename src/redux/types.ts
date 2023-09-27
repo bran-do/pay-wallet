@@ -14,10 +14,13 @@ export type WalletType = {
   currencies: [],
   expenses: [ExpenseType],
   totalExpenses: [],
+  editor: boolean,
+  idToEdit: number,
+  editingRates: any,
 };
 
 export type ExpenseType = {
-  value: number,
+  value: any,
   currency: string,
   method: string,
   tag: string,

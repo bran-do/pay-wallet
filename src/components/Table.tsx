@@ -1,12 +1,21 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { RootStateType, Dispatch } from '../redux/types';
-import { deleteExpenseAction } from '../redux/actions';
+import { RootStateType, Dispatch, ExpenseType } from '../redux/types';
+import {
+  deleteExpenseAction,
+  editFormBoolAction,
+  storeEditIdAction,
+  storeEditRatesAction } from '../redux/actions';
 import { twoDecs } from '../aux/functions';
 
 function Table() {
   const dispatch: Dispatch = useDispatch();
   const { expenses } = useSelector((state: RootStateType) => state.wallet);
 
+  function editExpense(expense: ExpenseType) {
+    dispatch(editFormBoolAction(true));
+    dispatch(storeEditRatesAction(expense.exchangeRates));
+    dispatch(storeEditIdAction(expense.id));
+  }
   return (
     <table>
       <thead>
@@ -36,6 +45,12 @@ function Table() {
               <td>{ twoDecs(expense.value * selectedRate.ask) }</td>
               <td>Real</td>
               <td>
+                <button
+                  data-testid="edit-btn"
+                  onClick={ () => editExpense(expense) }
+                >
+                  Editar
+                </button>
                 <button
                   onClick={ () => dispatch(deleteExpenseAction(expense.id)) }
                   data-testid="delete-btn"

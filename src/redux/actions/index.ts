@@ -58,3 +58,38 @@ export const deleteExpenseAction = (id: number) => ({
   type: 'DELETE_EXPENSE',
   payload: id,
 });
+
+export const editFormBoolAction = (bool: boolean) => ({
+  type: 'EDITING_EXPENSE',
+  payload: bool,
+});
+
+export const storeEditIdAction = (id: number) => ({
+  type: 'STORE_EXPENSE_EDIT_ID',
+  payload: id,
+});
+
+export const storeEditRatesAction = (rates: any) => ({
+  type: 'STORE_EXPENSE_EDIT_RATES',
+  payload: rates,
+});
+
+export const overwriteExpenseAction = (newExpense: ExpenseType, rates: any) => ({
+  type: 'OVERWRITE_EXPENSE',
+  payload: {
+    id: newExpense.id,
+    value: newExpense.value,
+    currency: newExpense.currency,
+    description: newExpense.description,
+    method: newExpense.method,
+    tag: newExpense.tag,
+    exchangeRates: rates,
+  },
+  convertedExpense: (
+    newExpense.value * rates[newExpense.currency].ask
+  ),
+});
+
+// export const storeEditedExpenseAction = (newExpense: ExpenseType) {
+
+// }
