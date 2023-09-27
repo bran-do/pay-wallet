@@ -91,12 +91,7 @@ function WalletForm() {
     }
 
     getCurrencies();
-
-    setEditForm({
-      ...editForm,
-      id: idToEdit,
-    });
-  }, [dispatch, idToEdit, editForm]);
+  }, [dispatch, idToEdit]);
 
   return (
     <form>
