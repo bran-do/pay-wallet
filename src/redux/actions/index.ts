@@ -24,24 +24,6 @@ export const fetchCurrenciesAction = () => {
   };
 };
 
-export const storeExpenseAction = (newExpense: ExpenseType, newRates: any) => ({
-  type: 'STORE_EXPENSE',
-  payload: {
-    id: newExpense.id,
-    value: newExpense.value,
-    currency: newExpense.currency,
-    description: newExpense.description,
-    method: newExpense.method,
-    tag: newExpense.tag,
-    exchangeRates: newRates,
-  },
-});
-
-export const storeConvertedExpenseAction = (convertedAmount: number) => ({
-  type: 'STORE_CONVERTED_EXPENSE',
-  payload: convertedAmount,
-});
-
 export const fetchExchangeRatesAction = (expense: any) => {
   return async (dispatch: Dispatch) => {
     try {
@@ -55,3 +37,24 @@ export const fetchExchangeRatesAction = (expense: any) => {
     }
   };
 };
+
+export const storeExpenseAction = (newExpense: ExpenseType, newRates: any) => ({
+  type: 'STORE_EXPENSE',
+  payload: {
+    id: newExpense.id,
+    value: newExpense.value,
+    currency: newExpense.currency,
+    description: newExpense.description,
+    method: newExpense.method,
+    tag: newExpense.tag,
+    exchangeRates: newRates,
+  },
+  convertedExpense: (
+    newExpense.value * newRates[newExpense.currency].ask
+  ),
+});
+
+export const deleteExpenseAction = (id: number) => ({
+  type: 'DELETE_EXPENSE',
+  payload: id,
+});

@@ -1,8 +1,8 @@
 import { AnyAction, combineReducers } from 'redux';
 
-const INITIAL_STATE_1: any[] = [];
+const INITIAL_STATE: any[] = [];
 
-export function currenciesReducer(state = INITIAL_STATE_1, action: AnyAction) {
+export function currenciesReducer(state = INITIAL_STATE, action: AnyAction) {
   switch (action.type) {
     case 'STORE_CURRENCIES':
       return action.payload;
@@ -10,18 +10,24 @@ export function currenciesReducer(state = INITIAL_STATE_1, action: AnyAction) {
   }
 }
 
-export function expensesReducer(state = INITIAL_STATE_1, action: AnyAction) {
+export function expensesReducer(state = INITIAL_STATE, action: AnyAction) {
   switch (action.type) {
     case 'STORE_EXPENSE':
       return [...state, action.payload];
+    case 'DELETE_EXPENSE':
+      return state.filter((expense) => expense.id !== action.payload);
     default: return state;
   }
 }
 
-export function convertedExpensesReducer(state = INITIAL_STATE_1, action: AnyAction) {
+export function convertedExpensesReducer(state = INITIAL_STATE, action: AnyAction) {
   switch (action.type) {
-    case 'STORE_CONVERTED_EXPENSE':
-      return [...state, action.payload];
+    case 'STORE_EXPENSE':
+      return [...state, {
+        amount: action.convertedExpense,
+        id: action.payload.id }];
+    case 'DELETE_EXPENSE':
+      return state.filter((expense) => expense.id !== action.payload);
     default: return state;
   }
 }

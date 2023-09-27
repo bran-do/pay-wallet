@@ -1,8 +1,11 @@
-import { useSelector } from 'react-redux';
-import { RootStateType } from '../redux/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootStateType, Dispatch } from '../redux/types';
+import { deleteExpenseAction } from '../redux/actions';
+import { twoDecs } from '../aux/functions';
 
 function Table() {
-  const { expenses, totalExpenses } = useSelector((state: RootStateType) => state.wallet);
+  const dispatch: Dispatch = useDispatch();
+  const { expenses } = useSelector((state: RootStateType) => state.wallet);
 
   return (
     <table>
@@ -20,18 +23,26 @@ function Table() {
         </tr>
       </thead>
       <tbody>
-        {expenses.map((expense, key) => {
-          const rates = expense.exchangeRates;
+        {expenses.map((expense) => {
+          const selectedRate = expense.exchangeRates[expense.currency];
           return (
-            <tr key={ key }>
-              <td>{expense.description}</td>
-              <td>{expense.tag}</td>
-              <td>{expense.method}</td>
-              <td>{((expense.value * 100) / 100).toFixed(2)}</td>
-              <td>{rates[expense.currency].name}</td>
-              <td>{((rates[expense.currency].ask * 100) / 100).toFixed(2)}</td>
-              <td>{((totalExpenses[expense.id] * 100) / 100).toFixed(2)}</td>
+            <tr key={ expense.id }>
+              <td>{ expense.description }</td>
+              <td>{ expense.tag }</td>
+              <td>{ expense.method }</td>
+              <td>{ twoDecs(expense.value) }</td>
+              <td>{ selectedRate.name }</td>
+              <td>{ twoDecs(selectedRate.ask) }</td>
+              <td>{ twoDecs(expense.value * selectedRate.ask) }</td>
               <td>Real</td>
+              <td>
+                <button
+                  onClick={ () => dispatch(deleteExpenseAction(expense.id)) }
+                  data-testid="delete-btn"
+                >
+                  Excluir
+                </button>
+              </td>
             </tr>
           );
         })}
