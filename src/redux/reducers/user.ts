@@ -7,7 +7,7 @@ const INITIAL_STATE: UserType = {
   email: '',
 };
 
-export function userReducer(state = INITIAL_STATE, action: AnyAction) {
+export function user(state = INITIAL_STATE, action: AnyAction) {
   switch (action.type) {
     case 'STORE_EMAIL':
       return {
@@ -19,4 +19,4 @@ export function userReducer(state = INITIAL_STATE, action: AnyAction) {
   }
 }
 
-export default userReducer;
+export default user;
