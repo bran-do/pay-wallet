@@ -1,3 +1,4 @@
+import { getCurrenciesFromAPI } from '../../currencyAPI/currencyAPI';
 import { Dispatch, ExpenseType } from '../types';
 
 export const storeEmailAction = (email: string) => ({
@@ -12,29 +13,15 @@ export const storeCurrenciesAction = (currencies: string[]) => ({
 
 export const fetchCurrenciesAction = () => {
   return async (dispatch: Dispatch) => {
-    try {
-      const response = await fetch('https://economia.awesomeapi.com.br/json/all');
-      const data = await response.json();
-      delete data.USDT;
-
-      dispatch(storeCurrenciesAction(Object.keys(data)));
-    } catch (error: any) {
-      console.log(error);
-    }
+    const data = await getCurrenciesFromAPI();
+    dispatch(storeCurrenciesAction(Object.keys(data)));
   };
 };
 
 export const fetchExchangeRatesAction = (expense: any) => {
   return async (dispatch: Dispatch) => {
-    try {
-      const response = await fetch('https://economia.awesomeapi.com.br/json/all');
-      const data = await response.json();
-      delete data.USDT;
-
-      dispatch(storeExpenseAction(expense, data));
-    } catch (error: any) {
-      console.log(error);
-    }
+    const data = await getCurrenciesFromAPI();
+    dispatch(storeExpenseAction(expense, data));
   };
 };
 
@@ -89,7 +76,3 @@ export const overwriteExpenseAction = (newExpense: ExpenseType, rates: any) => (
     newExpense.value * rates[newExpense.currency].ask
   ),
 });
-
-// export const storeEditedExpenseAction = (newExpense: ExpenseType) {
-
-// }

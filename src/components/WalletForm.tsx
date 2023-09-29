@@ -100,7 +100,7 @@ function WalletForm() {
         type="number"
         value={ value }
         onChange={ handleChange }
-        placeholder="Valor da desepesa"
+        placeholder="Valor da despesa"
         data-testid="value-input"
       />
 

@@ -1,14 +1,59 @@
-import { screen } from '@testing-library/react';
+import { screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { vi } from 'vitest';
+import * as APIModule from './currencyAPI/currencyAPI';
+import mockData from './tests/helpers/mockData';
 import { renderWithRouterAndRedux } from './tests/helpers/renderWith';
 
+import { editFormBoolReducer, storeEditIdReducer } from './redux/reducers/wallet';
+
 import App from './App';
-import Wallet from './pages/Wallet';
+
+const initialState = {
+  user: { email: 'felipe@trybe.com' },
+  wallet: {
+    expenses: [{
+      id: 0,
+      value: '',
+      currency: 'USD',
+      description: '',
+      method: 'Dinheiro',
+      tag: 'Alimentação',
+      exchangeRates: {
+        USD: {
+          name: 'Dólar Americano/Real Brasileiro',
+          ask: '5.0361',
+        },
+        EUR: {
+          name: 'Euro/Real Brasileiro',
+          ask: '5.3451',
+        },
+      },
+    }],
+    totalExpenses: [{
+      amount: 5.0361, id: 0,
+    },
+    {
+      amount: 0, id: 1,
+    }],
+    editor: false,
+    idToEdit: 0,
+    editingRates: {},
+  },
+};
+
+beforeEach(() => {
+  vi.spyOn(APIModule, 'getCurrenciesFromAPI').mockResolvedValue(mockData);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('Teste da página de login', () => {
   it('Há dois inputs (login e senha), o botão é disponibilizado após validação e redireciona para a carteira', async () => {
-    renderWithRouterAndRedux(<App />);
+    const { store } = renderWithRouterAndRedux(<App />);
     const user = userEvent.setup();
 
     const emailInput = screen.getByTestId('email-input');
@@ -18,6 +63,7 @@ describe('Teste da página de login', () => {
     expect(passwordInput).toBeInTheDocument();
 
     const submitBtn = screen.getByRole('button', { name: 'Entrar' });
+    expect(submitBtn).toBeInTheDocument();
     expect(submitBtn).toBeDisabled();
 
     const userEmail = 'usuario@gmail.com';
@@ -26,9 +72,14 @@ describe('Teste da página de login', () => {
     await user.type(passwordInput, '123456');
     expect(submitBtn).not.toBeDisabled();
 
-    await user.click(submitBtn);
+    await act(async () => {
+      await user.click(submitBtn);
+    });
 
-    const header = screen.getByTestId('header-currency-field');
+    expect(APIModule.getCurrenciesFromAPI).toHaveBeenCalled();
+    expect(store.getState().user.email).toMatch(userEmail);
+
+    const header = await screen.findByTestId('header-currency-field');
     expect(header).toBeInTheDocument();
 
     const headerEmail = screen.getByTestId('email-field');
@@ -38,7 +89,8 @@ describe('Teste da página de login', () => {
 
 describe('Testes da página carteira', () => {
   it('Há um formulário para preencher com as informações de uma despesa', async () => {
-    renderWithRouterAndRedux(<Wallet />);
+    renderWithRouterAndRedux(<App />, { initialEntries: ['/carteira'], initialState });
+    expect(APIModule.getCurrenciesFromAPI).toHaveBeenCalled();
 
     const valueInput = screen.getByTestId('value-input');
     const currencyInput = screen.getByTestId('currency-input');
@@ -53,55 +105,82 @@ describe('Testes da página carteira', () => {
     expect(tagInput).toBeInTheDocument();
   });
 
-  it('Há uma tabela com informações sobre as despesas', async () => {
-    renderWithRouterAndRedux(<Wallet />);
-
-    const table = screen.getByRole('table');
-    const tableHeading = screen.getAllByRole('columnheader');
-
-    expect(table).toBeInTheDocument();
-    expect(tableHeading).toHaveLength(9);
-  });
-
-  it('Uma despesa é adicionada e exibida corretamente na tabela', async () => {
-    renderWithRouterAndRedux(<Wallet />);
+  it('Uma despesa pode ser adicionada na tabela', async () => {
+    renderWithRouterAndRedux(<App />, { initialEntries: ['/carteira'], initialState });
     const user = userEvent.setup();
 
     const valueInput = screen.getByTestId('value-input');
+    const currencyInput = screen.getByTestId('currency-input');
     const descriptionInput = screen.getByTestId('description-input');
+    const methodInput = screen.getByTestId('method-input');
+    const tagInput = screen.getByTestId('tag-input');
 
     const addBtn = screen.getByRole('button', { name: 'Adicionar despesa' });
 
     await user.type(valueInput, '10');
+    await user.selectOptions(currencyInput, 'EUR');
     await user.type(descriptionInput, 'Nova despesa');
+    await user.selectOptions(methodInput, 'Cartão de crédito');
+    await user.selectOptions(tagInput, 'Saúde');
 
     await user.click(addBtn);
+
+    const table = screen.getByRole('table');
+    const tableRow = screen.getAllByRole('row');
+    const tableHeading = screen.getAllByRole('columnheader');
+
+    const deleteBtn = screen.getAllByTestId('delete-btn')[1];
+    const editBtn = screen.getAllByTestId('edit-btn')[1];
+    expect(deleteBtn).toBeInTheDocument();
+    expect(editBtn).toBeInTheDocument();
+
+    expect(table).toBeInTheDocument();
+    expect(tableRow).toHaveLength(3);
+    expect(tableHeading).toHaveLength(9);
+  });
+
+  it('Uma despesa do estado global é exibida corretamente na tabela, podendo excluir e editar', async () => {
+    const { store } = renderWithRouterAndRedux(<App />, { initialEntries: ['/carteira'], initialState });
+    const user = userEvent.setup();
+
+    const totalField = screen.getByTestId('total-field');
+    expect(totalField).toHaveTextContent('5.04');
+
+    const addBtn = screen.getByRole('button', { name: 'Adicionar despesa' });
+    const deleteBtn = screen.getByTestId('delete-btn');
+    const editBtn = screen.getByTestId('edit-btn');
+    expect(addBtn).toBeInTheDocument();
+    expect(deleteBtn).toBeInTheDocument();
+    expect(editBtn).toBeInTheDocument();
+
+    await user.click(editBtn);
+    expect(store.getState().wallet.editor).toBe(true);
+    expect(store.getState().wallet.idToEdit).toEqual(0);
+
+    const editingAction = {
+      type: 'EDITING_EXPENSE',
+      payload: true,
+    };
+
+    const editingIdAction = {
+      type: 'STORE_EXPENSE_EDIT_ID',
+      payload: 1,
+    };
+
+    expect(editFormBoolReducer(false, editingAction)).toBe(true);
+    expect(storeEditIdReducer(0, editingIdAction)).toBe(1);
+
+    const valueEditInput = screen.getByPlaceholderText('Valor da despesa');
+    await user.type(valueEditInput, '2');
+    const submitEditBtn = screen.getByRole('button', { name: 'Editar despesa' });
+
+    expect(submitEditBtn).toBeInTheDocument();
+    await user.click(submitEditBtn);
+
+    expect(totalField).toHaveTextContent('10.07');
+
+    expect(addBtn).toBeInTheDocument();
+
+    await user.click(deleteBtn);
   });
 });
-
-// beforeEach(() => {
-//   vi.spyOn(APIModule, 'currencyAPI').mockResolvedValue(mockData);
-// });
-
-// afterEach(() => {
-//   vi.restoreAllMocks();
-// });
-
-// test('A página de login possui dois inputs válidos para login e senha e a carteira é exibida ao logar', async () => {
-//   renderWithRouterAndRedux(<App />);
-//   const user = userEvent.setup();
-
-//   const loginInput = screen.getByPlaceholderText('E-mail');
-//   const passwordInput = screen.getByPlaceholderText('Senha');
-//   const submitBtn = screen.getByRole('button', { name: 'Entrar' });
-
-//   await user.type(loginInput, 'usuario@gmail.com');
-//   await user.type(passwordInput, '123456');
-//   await user.click(submitBtn);
-
-//   const header = screen.getByTestId('header-currency-field');
-
-//   await waitFor(() => {
-//     expect(header).toBeInTheDocument();
-//   })
-// })
